@@ -1,10 +1,19 @@
 
 Param(
-    [parameter(Mandatory)][String]$SourceFile,
-    [parameter(Mandatory)][String]$CompareFile,
-    [parameter(Mandatory)][String]$Destination,
-    [parameter(Mandatory)][String]$SourceHeader,
-    [parameter(Mandatory)][String]$CompareHeader
+    [parameter(Mandatory,HelpMessage='Choose a CSV file to start with.')]
+    [ValidatePattern('\.csv$')]
+    [String]$SourceFile,
+    [parameter(Mandatory,HelpMessage='Choose a CSV file to compare against.')]
+    [ValidatePattern('\.csv$')]
+    [String]$CompareFile,
+    [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
+    [ValidatePattern('\.csv$')]
+    [String]$Destination,
+    [parameter(Mandatory,HelpMessage='What is the header in the source file.')]
+    [ValidatePattern('\.csv$')]
+    [String]$SourceHeader,
+    [parameter(Mandatory,HelpMessage='What is the header in the compare file.')]
+    [String]$CompareHeader
 
 
 )
