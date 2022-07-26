@@ -67,13 +67,14 @@ process{
 
 
 
-    $SourceFile | ForEach-Object{
-        Write-Host "Checking $($_.'$SourceHeader')"
-        if($(($CompareFile)."$CompHeader") -eq $($_."$SrcHeader")){
-            Write-Host "$($_.'$SourceHeader') Found." -ForegroundColor Green
+    $SrcFile | ForEach-Object{
+        Write-Verbose -Message "Comparing $($_.$SrcHeader) $($CompFile.$CompHeader)"
+        if("$(($CompFile).$CompHeader)" -match "$($_.$SrcHeader)"){
+            Write-Host "$($_.$SrcHeader) Found." -ForegroundColor Green
             try{
                 Write-Verbose -Message "Writing information to $($timestamp)_compare.csv located at $Destination"
-                $_ | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -Append -Encoding UTF8 -NoTypeInformation
+                Write-Debug -Message "Writing $($_)"
+                $_ | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -Append -Encoding UTF8 -NoTypeInformation -Force
             } catch {
 	            Write-Error $_.Exception.Message
 	            Write-Error $_.Exception.ItemName
