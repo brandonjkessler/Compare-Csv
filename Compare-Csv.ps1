@@ -3,10 +3,10 @@ Param(
     [CmdletBinding()]
     [parameter(Mandatory,HelpMessage='Choose a CSV file to start with.')]
     [ValidatePattern('\.csv$')]
-    [String]$Source,
+    [String]$SourceFile,
     [parameter(Mandatory,HelpMessage='Choose a CSV file to compare against.')]
     [ValidatePattern('\.csv$')]
-    [String]$Compare,
+    [String]$CompareFile,
     [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
     [String]$Destination,
     [parameter(Mandatory,HelpMessage='What is the header in the source file.')]
