@@ -10,7 +10,6 @@ Param(
     [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
     [String]$Destination,
     [parameter(Mandatory,HelpMessage='What is the header in the source file.')]
-    [ValidatePattern('\.csv$')]
     [String]$SourceHeader,
     [parameter(Mandatory,HelpMessage='What is the header in the compare file.')]
     [String]$CompareHeader,
