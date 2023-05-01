@@ -1,6 +1,5 @@
-
+[CmdletBinding()]
 Param(
-    [CmdletBinding()]
     [parameter(Mandatory,HelpMessage='Choose a CSV file to start with.')]
     [ValidatePattern('\.csv$')]
     [String]$SourceFile,
