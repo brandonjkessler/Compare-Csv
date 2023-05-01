@@ -27,4 +27,4 @@ Header or Property that you are comparing to in the `SourceFile`
 Header or Property that you are using to compare in the `CompareFile`
 
 ## Examples
-`Compare-CSV -SourceFile .\CompNameAndSN.csv -CompareFile .\SCCMCollection.csv -Destination .\ComparedSCCM.csv -SourceHeader "Device Name" -CompareHeader "Computer Name"`
+`.\Compare-CSV.ps1 -SourceFile '.\CompNameAndSN.csv' -CompareFile '.\SCCMCollection.csv' -Destination '.\ComparedSCCM.csv' -SourceHeader "Device Name" -CompareHeader "Computer Name"`
