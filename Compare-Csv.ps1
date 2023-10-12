@@ -16,6 +16,20 @@ Param(
     [string]$LogPath = "$PSScriptRoot"
 )
 
+Function Write-CustomEventLog{
+	[cmdletbinding()]
+	param(
+		[string]$Message,
+		[int]$ID = 0001,
+		[int]$Category = 0,
+		[string]$EventSource = "Custom Event Log"
+	)
+    if ([System.Diagnostics.EventLog]::Exists('Application') -eq $False -or [System.Diagnostics.EventLog]::SourceExists($EventSource) -eq $False){
+        New-EventLog -LogName Application -Source $EventSource  | Out-Null
+    }
+    Write-EventLog -LogName Application -Source $EventSource -EntryType Information -EventId $ID -Message $Message -Category $Category
+}
+
 begin{
     #-- BEGIN: Executes First. Executes once. Useful for setting up and initializing. Optional
     if($LogPath -match '\\$'){
@@ -26,7 +40,8 @@ begin{
     #-- If you use "Throw" you'll need to use "Stop-Transcript" before to stop the logging.
     #-- Major Benefit is that Start-Transcript also captures -Verbose and -Debug messages.
     $timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
-    Start-Transcript -Path "$LogPath\$($timestamp)_Compare-Csv.log" -Append
+    $LogPath = Join-Path -Path $LogPath -ChildPath "$($timestamp)_Compare-Csv.log"
+    Start-Transcript -Path "$LogPath" -Append
     $Status = 'In Progress'
 }
 process{
