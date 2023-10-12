@@ -34,17 +34,18 @@ begin{
         Write-EventLog -LogName Application -Source $EventSource -EntryType Information -EventId $ID -Message $Message -Category $Category
     }
 
+    $timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
+
     #-- BEGIN: Executes First. Executes once. Useful for setting up and initializing. Optional
-    if($PSBoundParameters.Contains($LogPath)){
+    if($PSBoundParameters.Keys -contains 'LogPath'){
         Write-Verbose -Message "Creating log file at $LogPath."
         #-- Use Start-Transcript to create a .log file
         #-- If you use "Throw" you'll need to use "Stop-Transcript" before to stop the logging.
         #-- Major Benefit is that Start-Transcript also captures -Verbose and -Debug messages.
-        $timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
         $LogPath = Join-Path -Path $LogPath -ChildPath "$($timestamp)_Compare-Csv.log"
         Start-Transcript -Path "$LogPath" -Append
-        $Status = 'In Progress'
     }
+    $Status = 'In Progress'
 
 }
 process{
