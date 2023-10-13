@@ -70,44 +70,25 @@ process{
 
 
     ## Import the 2 CSV's
+    
+    Write-Verbose -Message "Importing $CompareFile" 
+    $CompFile = Import-Csv -Path $CompareFile
+    $CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
     Write-Verbose -Message "Importing $SourceFile."
     $SrcFile = Import-Csv -Path $SourceFile
-    Write-Verbose -Message "Importing $CompareFile"
-    $CompFile = Import-Csv -Path $CompareFile
 
-    # Set up Source and Compare Header to make sure there's something in the CSV's that match
-    Write-Verbose -Message "Setting up Source and Compare Headers."
-    $SrcHeader =  ($SrcFile | Get-Member | Where-Object{$_ -match "$SourceHeader"}).Name
-    Write-Debug -Message "SrcHeader Variable: $SrcHeader"
+    #-- Combines the 2 csv objects into a single set, then it groups them together based on the Source Header
+    #-- It will find the groups that have a count greater than or equal to 2 and select the first oject from there
+    #-- Finally it will spit that out into a csv
+    ($SrcFile + $CompFile) | Group-Object -Property "$SourceHeader" | Where-Object{$PSitem.Count -ge 2} | ForEach-Object{$PSItem.Group[0]} | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force
 
-    $CompHeader = ($CompFile | Get-Member | Where-Object{$_ -match "$CompareHeader"}).Name
-    Write-Debug -Message "CompHeader Variable: $CompHeader"
-
-
-
-    $SrcFile | ForEach-Object{
-        Write-Verbose -Message "Comparing $($_.$SrcHeader) $($CompFile.$CompHeader)"
-        if("$(($CompFile).$CompHeader)" -match "$($_.$SrcHeader)"){
-            Write-Host "$($_.$SrcHeader) Found." -ForegroundColor Green
-            try{
-                Write-Verbose -Message "Writing information to $($timestamp)_compare.csv located at $Destination"
-                Write-Debug -Message "Writing $($_)"
-                $_ | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -Append -Encoding UTF8 -NoTypeInformation -Force
-            } catch {
-	            Write-Error $_.Exception.Message
-	            Write-Error $_.Exception.ItemName
-                $Status = 'Failed'
-                Stop-Transcript
-                Throw "Script Status: $Status"
-            }
-        }
-    }
     $Status = 'Completed'
+    
 }
 end{
     # END: Executes Once. Executes Last. Useful for all things after process, like cleaning up after script. Optional.
     Write-Verbose -Message "Script completed successfully. File saved to $Destination\$($timestamp)_compare.csv"
-    if($PSBoundParameters.Contains($LogPath)){
+    if($PSBoundParameters.Keys -contains 'LogPath'){
         Stop-Transcript
     }
 
