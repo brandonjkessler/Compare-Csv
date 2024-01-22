@@ -72,10 +72,10 @@ process{
     ## Import the 2 CSV's
     
     Write-Verbose -Message "Importing $CompareFile" 
-    $CompFile = Import-Csv -Path $CompareFile
+    $CompFile = Import-Csv -Path $CompareFile | Sort-Object -Property $CompareHeader -Unique
     $CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
     Write-Verbose -Message "Importing $SourceFile."
-    $SrcFile = Import-Csv -Path $SourceFile
+    $SrcFile = Import-Csv -Path $SourceFile | Sort-Object -Property $SourceHeader -Unique
 
     #-- Combines the 2 csv objects into a single set, then it groups them together based on the Source Header
     #-- It will find the groups that have a count greater than or equal to 2 and select the first oject from there
