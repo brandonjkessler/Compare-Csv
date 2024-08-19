@@ -1,9 +1,7 @@
 [CmdletBinding()]
 Param(
 
-    [parameter(Mandatory,HelpMessage='Choose a CSV file to compare against.')]
-    [ValidatePattern('\.csv$')]
-    [String]$CompareFile,
+
     [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
     [String]$Destination,
     [parameter(Mandatory,HelpMessage='What is the header in the source file.')]
@@ -52,6 +50,28 @@ if($msgBoxInput -ne 'OK'){
     $null = $FileBrowser.ShowDialog()
     $SourceFile = $FileBrowser.File
     Write-Verbose "SourceFile will be $SourceFile"
+}
+
+#-- Will need to make this a function for source and compare on next refactor
+#-- https://mcpmag.com/articles/2016/06/09/display-gui-message-boxes-in-powershell.aspx?m=1
+#-- https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxbuttons?view=windowsdesktop-8.0
+https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxicon?view=windowsdesktop-8.0
+$msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a file to compare to the source file','Compare File','OKCancel','Information')
+
+if($msgBoxInput -ne 'OK'){
+    Write-Error "OK was not selected. Terminating."
+    Stop-Transcript
+    Exit 2
+} else {
+    #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
+    $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        Title = 'Compare File'
+        InitialDirectory = [Environment]::GetFolderPath('MyComputer')
+        Filter = 'SpreadSheet (*.csv)|*.csv'
+    }
+    $null = $FileBrowser.ShowDialog()
+    $CompareFile = $FileBrowser.File
+    Write-Verbose "SourceFile will be $CompareFile"
 }
 
 
