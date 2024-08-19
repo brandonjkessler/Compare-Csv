@@ -47,7 +47,9 @@ $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a Source File','Source
 
 if($msgBoxInput -ne 'OK'){
     Write-Error "OK was not selected. Terminating."
-    Stop-Transcript
+    if($PSBoundParameters.Keys -contains 'LogPath'){
+        Stop-Transcript
+    }
     Exit 2
 } else {
     #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
@@ -57,7 +59,7 @@ if($msgBoxInput -ne 'OK'){
         Filter = 'SpreadSheet (*.csv)|*.csv'
     }
     $null = $FileBrowser.ShowDialog()
-    $SourceFile = $FileBrowser.File
+    $SourceFile = "$($FileBrowser.FileName)"
     Write-Verbose "SourceFile will be $SourceFile"
 }
 
@@ -69,7 +71,9 @@ $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a file to compare to t
 
 if($msgBoxInput -ne 'OK'){
     Write-Error "OK was not selected. Terminating."
-    Stop-Transcript
+    if($PSBoundParameters.Keys -contains 'LogPath'){
+        Stop-Transcript
+    }
     Exit 2
 } else {
     #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
@@ -79,35 +83,41 @@ if($msgBoxInput -ne 'OK'){
         Filter = 'SpreadSheet (*.csv)|*.csv'
     }
     $null = $FileBrowser.ShowDialog()
-    $CompareFile = $FileBrowser.File
+    $CompareFile = "$($FileBrowser.FileName)"
     Write-Verbose "SourceFile will be $CompareFile"
 }
 
 #-- Create a function for these during next refactor
 try{
-    $SourceHeader = $SourceFile | Out-GridView -Title Source Header -Wait -ErrorAction Stop
+    Write-Verbose -Message "Importing $SourceFile."
+    $SrcFile = Import-Csv -Path $SourceFile
+    #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
+    $SourceHeader = $SrcFilFile[0].PSobject.Properties.Names | Out-GridView -Title 'Source Header' -PassThru -ErrorAction Stop
 
 } catch {
     Write-Error $PSitem.Exception.MessageBox
-    Stop-Transcript
+    if($PSBoundParameters.Keys -contains 'LogPath'){
+        Stop-Transcript
+    }
     Exit 2
 }
 
 try{
-    $CompareHeader = $CompareFile | Out-GridView -Title Source Header -Wait -ErrorAction Stop
+    Write-Verbose -Message "Importing $CompareFile" 
+    $CompFile = Import-Csv -Path $CompareFile
+    #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
+    $CompareHeader =  $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
 } catch {
     Write-Error $PSitem.Exception.MessageBox
-    Stop-Transcript
+    if($PSBoundParameters.Keys -contains 'LogPath'){
+        Stop-Transcript
+    }
     Exit 2
 }
 
     ## Import the 2 CSV's
     
-    Write-Verbose -Message "Importing $CompareFile" 
-    $CompFile = Import-Csv -Path $CompareFile | Sort-Object -Property $CompareHeader -Unique
     $CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
-    Write-Verbose -Message "Importing $SourceFile."
-    $SrcFile = Import-Csv -Path $SourceFile | Sort-Object -Property $SourceHeader -Unique
 
     #-- Combines the 2 csv objects into a single set, then it groups them together based on the Source Header
     #-- It will find the groups that have a count greater than or equal to 2 and select the first oject from there
