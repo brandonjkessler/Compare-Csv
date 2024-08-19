@@ -84,18 +84,20 @@ if($msgBoxInput -ne 'OK'){
     }
     $null = $FileBrowser.ShowDialog()
     $CompareFile = "$($FileBrowser.FileName)"
-    Write-Verbose "SourceFile will be $CompareFile"
+    Write-Verbose "Compare File will be $CompareFile"
 }
 
 #-- Create a function for these during next refactor
 try{
     Write-Verbose -Message "Importing $SourceFile."
-    $SrcFile = Import-Csv -Path $SourceFile
+    $SrcFile = Import-Csv -Path $SourceFile -Encoding UTF8
     #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
-    $SourceHeader = $SrcFilFile[0].PSobject.Properties.Names | Out-GridView -Title 'Source Header' -PassThru -ErrorAction Stop
+    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the source file','Source Header','OK','Information')
+
+    $SourceHeader = $SrcFile[0].PSobject.Properties.Name | Out-GridView -Title 'Source Header' -PassThru -ErrorAction Stop
 
 } catch {
-    Write-Error $PSitem.Exception.MessageBox
+    Write-Error $PSitem.Exception.Message
     if($PSBoundParameters.Keys -contains 'LogPath'){
         Stop-Transcript
     }
@@ -104,18 +106,20 @@ try{
 
 try{
     Write-Verbose -Message "Importing $CompareFile" 
-    $CompFile = Import-Csv -Path $CompareFile
+    $CompFile = Import-Csv -Path $CompareFile -Encoding UTF8
     #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
-    $CompareHeader =  $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
+    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the compare file','Compare Header','OK','Information')
+
+    $CompareHeader = $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
 } catch {
-    Write-Error $PSitem.Exception.MessageBox
+    Write-Error $PSitem.Exception.Message
     if($PSBoundParameters.Keys -contains 'LogPath'){
         Stop-Transcript
     }
     Exit 2
 }
 
-    ## Import the 2 CSV's
+    #-- Alias property so that they can be grouped and compared
     
     $CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
 
