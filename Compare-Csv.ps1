@@ -4,10 +4,6 @@ Param(
 
     [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
     [String]$Destination,
-    [parameter(Mandatory,HelpMessage='What is the header in the source file.')]
-    [String]$SourceHeader,
-    [parameter(Mandatory,HelpMessage='What is the header in the compare file.')]
-    [String]$CompareHeader,
     [Parameter(Mandatory = $false, HelpMessage = 'Path to Save Log Files')]
     [string]$LogPath
 )
@@ -74,7 +70,22 @@ if($msgBoxInput -ne 'OK'){
     Write-Verbose "SourceFile will be $CompareFile"
 }
 
+try{
+    $SourceHeader = $SourceFile | Out-GridView -Title Source Header -Wait -ErrorAction Stop
 
+} catch {
+    Write-Error $PSitem.Exception.MessageBox
+    Stop-Transcript
+    Exit 2
+}
+
+try{
+    $CompareHeader = $CompareFile | Out-GridView -Title Source Header -Wait -ErrorAction Stop
+} catch {
+    Write-Error $PSitem.Exception.MessageBox
+    Stop-Transcript
+    Exit 2
+}
 
     ## Import the 2 CSV's
     
