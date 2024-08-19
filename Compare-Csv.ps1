@@ -1,9 +1,6 @@
 [CmdletBinding()]
 Param(
 
-
-    [parameter(Mandatory,HelpMessage='Choose where to output a CSV.')]
-    [String]$Destination,
     [Parameter(Mandatory = $false, HelpMessage = 'Path to Save Log Files')]
     [string]$LogPath
 )
@@ -26,6 +23,22 @@ $Status = 'In Progress'
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName PresentationFramework
+
+$msgBoxInput = [System.Windows.MessageBox]::Show('Choose a destination folder to save the comparison file','Destination','OKCancel','Information')
+
+if($msgBoxInput -ne 'OK'){
+    Write-Error "OK was not selected. Terminating."
+    Stop-Transcript
+    Exit 2
+} else {
+    #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
+    $FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{
+        RootFolder = 'Desktop'
+    }
+    $null = $FolderBrowser.ShowDialog()
+    $Destination = $FolderBrowser.SelectedPath
+    Write-Verbose "Destination folder will be $Destination"
+}
 
 #-- https://mcpmag.com/articles/2016/06/09/display-gui-message-boxes-in-powershell.aspx?m=1
 #-- https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxbuttons?view=windowsdesktop-8.0
@@ -70,6 +83,7 @@ if($msgBoxInput -ne 'OK'){
     Write-Verbose "SourceFile will be $CompareFile"
 }
 
+#-- Create a function for these during next refactor
 try{
     $SourceHeader = $SourceFile | Out-GridView -Title Source Header -Wait -ErrorAction Stop
 
