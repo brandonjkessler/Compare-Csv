@@ -1,8 +1,6 @@
 [CmdletBinding()]
 Param(
-    [parameter(Mandatory,HelpMessage='Choose a CSV file to start with.')]
-    [ValidatePattern('\.csv$')]
-    [String]$SourceFile,
+
     [parameter(Mandatory,HelpMessage='Choose a CSV file to compare against.')]
     [ValidatePattern('\.csv$')]
     [String]$CompareFile,
@@ -18,42 +16,44 @@ Param(
 
 
 
-begin{
+$timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
 
-
-    $timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
-
-    #-- BEGIN: Executes First. Executes once. Useful for setting up and initializing. Optional
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Write-Verbose -Message "Creating log file at $LogPath."
-        #-- Use Start-Transcript to create a .log file
-        #-- If you use "Throw" you'll need to use "Stop-Transcript" before to stop the logging.
-        #-- Major Benefit is that Start-Transcript also captures -Verbose and -Debug messages.
-        $LogPath = Join-Path -Path $LogPath -ChildPath "$($timestamp)_Compare-Csv.log"
-        Start-Transcript -Path "$LogPath" -Append
-    }
-    $Status = 'In Progress'
-
+if($PSBoundParameters.Keys -contains 'LogPath'){
+    Write-Verbose -Message "Creating log file at $LogPath."
+    #-- Use Start-Transcript to create a .log file
+    #-- If you use "Throw" you'll need to use "Stop-Transcript" before to stop the logging.
+    #-- Major Benefit is that Start-Transcript also captures -Verbose and -Debug messages.
+    $LogPath = Join-Path -Path $LogPath -ChildPath "$($timestamp)_Compare-Csv.log"
+    Start-Transcript -Path "$LogPath" -Append
 }
-process{
-    #-- PROCESS: Executes second. Executes multiple times based on how many objects are sent to the function through the pipeline. Optional.
-    ##-- Test if files exist
-    Write-Verbose -Message "Testing if $SourceFile exists."
-    if((Test-Path -Path $SourceFile) -ne $true){
-        $Status = 'Failed'
-        Write-Error "$SourceFile does not exist."
-        Stop-Transcript
-        Throw "Script Status: $Status"
+$Status = 'In Progress'
 
-    }
 
-    Write-Verbose -Message "Testing if $CompareFile exists."
-    if((Test-Path -Path $CompareFile) -ne $true){
-        $Status = 'Failed'
-        Write-Error "$CompareFile does not exist."
-        Stop-Transcript
-        Throw "Script Status: $Status"
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName PresentationFramework
+
+#-- https://mcpmag.com/articles/2016/06/09/display-gui-message-boxes-in-powershell.aspx?m=1
+#-- https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxbuttons?view=windowsdesktop-8.0
+https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxicon?view=windowsdesktop-8.0
+$msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a Source File','Source File','OKCancel','Information')
+
+if($msgBoxInput -ne 'OK'){
+    Write-Error "OK was not selected. Terminating."
+    Stop-Transcript
+    Exit 2
+} else {
+    #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
+    $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
+        Title = 'Source File'
+        InitialDirectory = [Environment]::GetFolderPath('MyComputer')
+        Filter = 'SpreadSheet (*.csv)|*.csv'
     }
+    $null = $FileBrowser.ShowDialog()
+    $SourceFile = $FileBrowser.File
+    Write-Verbose "SourceFile will be $SourceFile"
+}
+
 
 
     ## Import the 2 CSV's
@@ -71,8 +71,7 @@ process{
 
     $Status = 'Completed'
     
-}
-end{
+
     # END: Executes Once. Executes Last. Useful for all things after process, like cleaning up after script. Optional.
     Write-Verbose -Message "Script completed successfully. File saved to $Destination\$($timestamp)_compare.csv"
     if($PSBoundParameters.Keys -contains 'LogPath'){
@@ -80,7 +79,7 @@ end{
     }
 
     Return $Status
-}
+
 
 
 
