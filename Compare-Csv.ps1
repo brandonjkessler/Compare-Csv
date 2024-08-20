@@ -24,26 +24,33 @@ $Status = 'In Progress'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName PresentationFramework
 
-$msgBoxInput = [System.Windows.MessageBox]::Show('Choose a destination folder to save the comparison file','Destination','OKCancel','Information')
 
-if($msgBoxInput -ne 'OK'){
-    Write-Error "OK was not selected. Terminating."
-    Stop-Transcript
-    Exit 2
-} else {
+
+
     #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
     $FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{
+        Description = 'Choose a destination folder to save the comparison file to.'
         RootFolder = 'Desktop'
+        ShowNewFolderButton = $true
     }
     $null = $FolderBrowser.ShowDialog()
-    $Destination = $FolderBrowser.SelectedPath
-    Write-Verbose "Destination folder will be $Destination"
-}
+    if($FolderBrowser.SelectedPath -eq ''){
+        Write-Error "No folder path selected. Terminating."
+        if($PSBoundParameters.Keys -contains 'LogPath'){
+            Stop-Transcript
+        }
+        Exit 2
+    } else {
+        $Destination = $FolderBrowser.SelectedPath
+        Write-Verbose "Destination folder will be $Destination"
+    }
+
+
 
 #-- https://mcpmag.com/articles/2016/06/09/display-gui-message-boxes-in-powershell.aspx?m=1
 #-- https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxbuttons?view=windowsdesktop-8.0
 #--https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.messageboxicon?view=windowsdesktop-8.0
-$msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a Source File','Source File','OKCancel','Information')
+$msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a Source File to begin comparison. Headers from the Source File will be written to comparison file.','Source File','OKCancel','Information')
 
 if($msgBoxInput -ne 'OK'){
     Write-Error "OK was not selected. Terminating."
@@ -57,10 +64,20 @@ if($msgBoxInput -ne 'OK'){
         Title = 'Source File'
         InitialDirectory = [Environment]::GetFolderPath('MyComputer')
         Filter = 'SpreadSheet (*.csv)|*.csv'
+        Multiselect = $false
     }
     $null = $FileBrowser.ShowDialog()
-    $SourceFile = "$($FileBrowser.FileName)"
-    Write-Verbose "SourceFile will be $SourceFile"
+    if($FileBrowser.FileName -eq ''){
+        Write-Error "File was not selected. Terminating."
+        if($PSBoundParameters.Keys -contains 'LogPath'){
+            Stop-Transcript
+        }
+        Exit 2
+    } else {
+        $SourceFile = "$($FileBrowser.FileName)"
+        Write-Verbose "SourceFile will be $SourceFile"
+    }
+
 }
 
 #-- Will need to make this a function for source and compare on next refactor
@@ -81,10 +98,20 @@ if($msgBoxInput -ne 'OK'){
         Title = 'Compare File'
         InitialDirectory = [Environment]::GetFolderPath('MyComputer')
         Filter = 'SpreadSheet (*.csv)|*.csv'
+        Multiselect = $false
     }
     $null = $FileBrowser.ShowDialog()
-    $CompareFile = "$($FileBrowser.FileName)"
-    Write-Verbose "Compare File will be $CompareFile"
+    if($FileBrowser.FileName -eq ''){
+        Write-Error "File was not selected. Terminating."
+        if($PSBoundParameters.Keys -contains 'LogPath'){
+            Stop-Transcript
+        }
+        Exit 2
+    } else {
+        $CompareFile = "$($FileBrowser.FileName)"
+        Write-Verbose "Compare File will be $CompareFile"
+    }
+
 }
 
 #-- Create a function for these during next refactor
@@ -92,7 +119,7 @@ try{
     Write-Verbose -Message "Importing $SourceFile."
     $SrcFile = Import-Csv -Path $SourceFile -Encoding UTF8
     #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
-    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the source file','Source Header','OK','Information')
+    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the source file. This should contain the relevant data that exists between the two files.','Source Header','OK','Information')
 
     $SourceHeader = $SrcFile[0].PSobject.Properties.Name | Out-GridView -Title 'Source Header' -PassThru -ErrorAction Stop
 
@@ -108,7 +135,7 @@ try{
     Write-Verbose -Message "Importing $CompareFile" 
     $CompFile = Import-Csv -Path $CompareFile -Encoding UTF8
     #-- https://stackoverflow.com/questions/25764366/how-to-get-the-value-of-header-in-csv
-    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the compare file','Compare Header','OK','Information')
+    $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose the header to compare in the compare file. This should contain the relevant data that exists between the two files.','Compare Header','OK','Information')
 
     $CompareHeader = $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
 } catch {
@@ -118,6 +145,14 @@ try{
     }
     Exit 2
 }
+
+#-- Progress bar
+$srcCount = $SrcFile.Count
+Write-Verbose "Total count of items is $srcCount"
+$currentSrcCount = 0
+
+$compCount = $CompFile.count
+
 
 #-- Alias property so that they can be grouped and compared
 
@@ -130,8 +165,15 @@ try{
 #($SrcFile + $CompFile) | Group-Object -Property "$SourceHeader" | Where-Object{$PSitem.Count -ge 2} | ForEach-Object{$PSItem.Group[0]} | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force
 #-- Getting inconsistent results, will need to go back to the Foreach loop
 Foreach($i in $SrcFile){
+    $currentSrcCount++
+    Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status 'Running' -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
+    $currentCompCount = 0
     foreach($j in $CompFile){
+        $currentCompCount++
+        Write-Progress -Activity "Searching $($j.$CompareHeader) as a match" -Status 'Running' -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
+
         if($i.$SourceHeader -match $j.$CompareHeader){
+
             Write-Verbose "$($i.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
             $i | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
         } else {
