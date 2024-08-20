@@ -27,23 +27,23 @@ Add-Type -AssemblyName PresentationFramework
 
 
 
-    #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
-    $FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{
-        Description = 'Choose a destination folder to save the comparison file to.'
-        RootFolder = 'Desktop'
-        ShowNewFolderButton = $true
+#-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
+$FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{
+    Description = 'Choose a destination folder to save the comparison file to.'
+    RootFolder = 'Desktop'
+    ShowNewFolderButton = $true
+}
+$null = $FolderBrowser.ShowDialog()
+if($FolderBrowser.SelectedPath -eq ''){
+    Write-Error "No folder path selected. Terminating."
+    if($PSBoundParameters.Keys -contains 'LogPath'){
+        Stop-Transcript
     }
-    $null = $FolderBrowser.ShowDialog()
-    if($FolderBrowser.SelectedPath -eq ''){
-        Write-Error "No folder path selected. Terminating."
-        if($PSBoundParameters.Keys -contains 'LogPath'){
-            Stop-Transcript
-        }
-        Exit 2
-    } else {
-        $Destination = $FolderBrowser.SelectedPath
-        Write-Verbose "Destination folder will be $Destination"
-    }
+    Exit 2
+} else {
+    $Destination = $FolderBrowser.SelectedPath
+    Write-Verbose "Destination folder will be $Destination"
+}
 
 
 
@@ -164,18 +164,24 @@ $compCount = $CompFile.count
 #-- compare object does work quickly but doesn't keep the source CSV info like we want
 #($SrcFile + $CompFile) | Group-Object -Property "$SourceHeader" | Where-Object{$PSitem.Count -ge 2} | ForEach-Object{$PSItem.Group[0]} | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force
 #-- Getting inconsistent results, will need to go back to the Foreach loop
+$SrcFile = $SrcFile | Sort-Object -Property $SourceHeader
+$CompFile = $CompFile | Sort-Object -Property $CompareHeader
+
+
 Foreach($i in $SrcFile){
     $currentSrcCount++
-    Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status 'Running' -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
+    Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
     $currentCompCount = 0
     foreach($j in $CompFile){
         $currentCompCount++
-        Write-Progress -Activity "Searching $($j.$CompareHeader) as a match" -Status 'Running' -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
+        Write-Progress -Activity "Searching $($j.$CompareHeader) as a match." -Status "$currentCompCount out of $compCount" -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
 
         if($i.$SourceHeader -match $j.$CompareHeader){
 
             Write-Verbose "$($i.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
             $i | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
+            $CompFile = $CompFile | Where-Object{$PSitem.$CompareHeader -ne $j.$CompareHeader}
+
         } else {
             Write-Verbose "$($i.$SourceHeader) did not match $($j.$CompareHeader)"
         }
