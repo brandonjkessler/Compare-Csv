@@ -119,25 +119,38 @@ try{
     Exit 2
 }
 
-    #-- Alias property so that they can be grouped and compared
-    
-    $CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
+#-- Alias property so that they can be grouped and compared
 
-    #-- Combines the 2 csv objects into a single set, then it groups them together based on the Source Header
-    #-- It will find the groups that have a count greater than or equal to 2 and select the first oject from there
-    #-- Finally it will spit that out into a csv
-    ($SrcFile + $CompFile) | Group-Object -Property "$SourceHeader" | Where-Object{$PSitem.Count -ge 2} | ForEach-Object{$PSItem.Group[0]} | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force
+#$CompFile | Add-Member -MemberType AliasProperty -Name "$SourceHeader" -Value "$CompareHeader"
 
-    $Status = 'Completed'
-    
+#-- Combines the 2 csv objects into a single set, then it groups them together based on the Source Header
+#-- It will find the groups that have a count greater than or equal to 2 and select the first oject from there
+#-- Finally it will spit that out into a csv
+#-- compare object does work quickly but doesn't keep the source CSV info like we want
+#($SrcFile + $CompFile) | Group-Object -Property "$SourceHeader" | Where-Object{$PSitem.Count -ge 2} | ForEach-Object{$PSItem.Group[0]} | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force
+#-- Getting inconsistent results, will need to go back to the Foreach loop
+Foreach($i in $SrcFile){
+    foreach($j in $CompFile){
+        if($i.$SourceHeader -match $j.$CompareHeader){
+            Write-Verbose "$($i.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
+            $i | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
+        } else {
+            Write-Verbose "$($i.$SourceHeader) did not match $($j.$CompareHeader)"
+        }
 
-    # END: Executes Once. Executes Last. Useful for all things after process, like cleaning up after script. Optional.
-    Write-Verbose -Message "Script completed successfully. File saved to $Destination\$($timestamp)_compare.csv"
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
     }
+}
 
-    Return $Status
+$Status = 'Completed'
+
+
+# END: Executes Once. Executes Last. Useful for all things after process, like cleaning up after script. Optional.
+Write-Verbose -Message "Script completed successfully. File saved to $Destination\$($timestamp)_compare.csv"
+if($PSBoundParameters.Keys -contains 'LogPath'){
+    Stop-Transcript
+}
+
+Return $Status
 
 
 
