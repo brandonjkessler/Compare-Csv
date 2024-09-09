@@ -204,7 +204,7 @@ function Compare-ComparisonFile{
 Foreach($i in $SrcFile){
     $currentSrcCount++
     Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
-    Compare-ComparisonFile -srcItem $i -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHea$srcItem
+    Compare-ComparisonFile -srcItem $i -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHeader
 }
 
 $Status = 'Completed'
