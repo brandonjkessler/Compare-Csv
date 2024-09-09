@@ -176,12 +176,13 @@ Foreach($i in $SrcFile){
         $currentCompCount++
         Write-Progress -Activity "Searching $($j.$CompareHeader) as a match." -Status "$currentCompCount out of $compCount" -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
 
-        if($i.$SourceHeader -match $j.$CompareHeader){
+        if($i.$SourceHeader -ieq $j.$CompareHeader){
 
             Write-Verbose "$($i.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
             $i | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
             $CompFile = $CompFile | Where-Object{$PSitem.$CompareHeader -ne $j.$CompareHeader}
-
+            $compCount = $CompFile.count
+            break
         } else {
             Write-Verbose "$($i.$SourceHeader) did not match $($j.$CompareHeader)"
         }
