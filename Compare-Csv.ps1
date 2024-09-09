@@ -167,19 +167,30 @@ $compCount = $CompFile.count
 $SrcFile = $SrcFile | Sort-Object -Property $SourceHeader
 $CompFile = $CompFile | Sort-Object -Property $CompareHeader
 
+#-- Create a multi-threaded workload
+#-- Add an object to the threaded array and remove from the source file
+#-- Create an array to hold the next x threaded items to check
+#-- and create a counter to check how many threads are active
+$threadLimit = 12
+$activeThreads = 0
 
-Foreach($i in $SrcFile){
-    $currentSrcCount++
-    Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
+function Compare-ComparisonFile{
+    [CmdletBinding()]
+    param(
+        $srcItem,
+        $SourceHeader,
+        $CompFile,
+        $CompareHeader
+    )
     $currentCompCount = 0
     foreach($j in $CompFile){
         $currentCompCount++
         Write-Progress -Activity "Searching $($j.$CompareHeader) as a match." -Status "$currentCompCount out of $compCount" -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
 
-        if($i.$SourceHeader -ieq $j.$CompareHeader){
+        if($srcItem.$SourceHeader -ieq $j.$CompareHeader){
 
-            Write-Verbose "$($i.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
-            $i | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
+            Write-Verbose "$($srcItem.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
+            $srcItem | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
             $CompFile = $CompFile | Where-Object{$PSitem.$CompareHeader -ne $j.$CompareHeader}
             $compCount = $CompFile.count
             break
@@ -188,6 +199,12 @@ Foreach($i in $SrcFile){
         }
 
     }
+}
+
+Foreach($i in $SrcFile){
+    $currentSrcCount++
+    Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
+    Compare-ComparisonFile -srcItem $i -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHea$srcItem
 }
 
 $Status = 'Completed'
