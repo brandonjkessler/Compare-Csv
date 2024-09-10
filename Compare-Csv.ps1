@@ -171,7 +171,7 @@ $CompFile = $CompFile | Sort-Object -Property $CompareHeader
 #-- Add an object to the threaded array and remove from the source file
 #-- Create an array to hold the next x threaded items to check
 #-- and create a counter to check how many threads are active
-$threadLimit = 12
+$threadLimit = 24
 
 
 function Compare-ComparisonFile{
