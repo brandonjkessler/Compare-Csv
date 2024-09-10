@@ -172,7 +172,7 @@ $CompFile = $CompFile | Sort-Object -Property $CompareHeader
 #-- Create an array to hold the next x threaded items to check
 #-- and create a counter to check how many threads are active
 $threadLimit = 12
-$activeThreads = 0
+
 
 function Compare-ComparisonFile{
     [CmdletBinding()]
@@ -201,10 +201,58 @@ function Compare-ComparisonFile{
     }
 }
 
+#-- https://stackoverflow.com/questions/7162090/how-do-i-start-a-job-of-a-function-i-just-defined
+#-- https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/start-job?view=powershell-7.4
+
 Foreach($i in $SrcFile){
+    $jobs = Get-Job
     $currentSrcCount++
     Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
-    Compare-ComparisonFile -srcItem $i -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHeader
+    if($jobs.Count -lt $threadLimit){
+        Start-Job -ScriptBlock {
+            function Compare-ComparisonFile{
+                [CmdletBinding()]
+                param(
+                    $srcItem,
+                    $SourceHeader,
+                    $CompFile,
+                    $CompareHeader
+                )
+                $currentCompCount = 0
+                foreach($j in $CompFile){
+                    $currentCompCount++
+                    Write-Progress -Activity "Searching $($j.$CompareHeader) as a match." -Status "$currentCompCount out of $compCount" -PercentComplete (($currentCompCount/$compCount) * 100) -Id 2 -ParentId 1
+            
+                    if($srcItem.$SourceHeader -ieq $j.$CompareHeader){
+            
+                        Write-Verbose "$($srcItem.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
+                        $srcItem | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
+                        $CompFile = $CompFile | Where-Object{$PSitem.$CompareHeader -ne $j.$CompareHeader}
+                        $compCount = $CompFile.count
+                        break
+                    } else {
+                        Write-Verbose "$($i.$SourceHeader) did not match $($j.$CompareHeader)"
+                    }
+            
+                }
+            }
+            Compare-ComparisonFile -srcItem $i -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHeader
+        } | Receive-Job -Wait -AutoRemoveJob
+    } else {
+        Write-Verbose "Hit thread limit of $threadLimit. Waiting on Jobs to complete."
+        while($jobs.Count -ge $threadLimit){
+            $jobs = Get-Job
+            foreach($t in $jobs){
+                if($t.State -eq 'Completed'){
+                    Write-Verbose "Job ID $t was complete, now removing job and continuing."
+                    Remove-Job -Name $t.Name -ErrorAction SilentlyContinue
+                }
+            }
+            
+        }
+    }
+
+
 }
 
 $Status = 'Completed'
