@@ -151,7 +151,7 @@ $srcCount = $SrcFile.Count
 Write-Verbose "Total count of items is $srcCount"
 $currentSrcCount = 0
 
-$compCount = $CompFile.count
+
 
 
 #-- Alias property so that they can be grouped and compared
@@ -182,6 +182,7 @@ function Compare-ComparisonFile{
         $CompFile,
         $CompareHeader
     )
+    $compCount = $CompFile.count
     $currentCompCount = 0
     foreach($j in $CompFile){
         $currentCompCount++
