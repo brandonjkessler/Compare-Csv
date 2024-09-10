@@ -2,7 +2,9 @@
 Param(
 
     [Parameter(Mandatory = $false, HelpMessage = 'Path to Save Log Files')]
-    [string]$LogPath
+    [string]$LogPath,
+    [Parameter(Mandatory = $false, HelpMessage = 'Number of threads to run simultaniously.')]
+    [int]$ThreadLimit = 24
 )
 
 
@@ -168,10 +170,8 @@ $SrcFile = $SrcFile | Sort-Object -Property $SourceHeader
 $CompFile = $CompFile | Sort-Object -Property $CompareHeader
 
 #-- Create a multi-threaded workload
-#-- Add an object to the threaded array and remove from the source file
-#-- Create an array to hold the next x threaded items to check
-#-- and create a counter to check how many threads are active
-$threadLimit = 24
+
+
 
 
 function Compare-ComparisonFile{
@@ -213,7 +213,7 @@ Foreach($i in $SrcFile){
     $jobs = Get-Job
     $currentSrcCount++
     Write-Progress -Activity "Searching for Matches to $($i.$SourceHeader)" -Status "$currentSrcCount out of $srcCount" -PercentComplete (($currentSrcCount/$srcCount) * 100) -Id 1
-    if($jobs.Count -lt $threadLimit){
+    if($jobs.Count -lt $ThreadLimit){
         $GetCompareFunc = $(Get-Command Compare-ComparisonFile).Definition
         Start-Job -ScriptBlock {
             param(
@@ -228,8 +228,8 @@ Foreach($i in $SrcFile){
             Compare-ComparisonFile -srcItem $srcItem -SourceHeader $SourceHeader -CompFile $CompFile -CompareHeader $CompareHeader -Destination $Destination -timestamp $timestamp
         } -ArgumentList $i, $SourceHeader, $CompFile, $CompareHeader, $Destination, $timestamp 
     } else {
-        Write-Verbose "Hit thread limit of $threadLimit. Waiting on Jobs to complete."
-        while($jobs.Count -ge $threadLimit){
+        Write-Verbose "Hit thread limit of $ThreadLimit. Waiting on Jobs to complete."
+        while($jobs.Count -ge $ThreadLimit){
             $jobs = Get-Job
             foreach($t in $jobs){
                 if($t.State -eq 'Completed'){
