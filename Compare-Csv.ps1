@@ -195,8 +195,6 @@ function Compare-ComparisonFile{
 
             Write-Verbose "$($srcItem.$SourceHeader) Matched $($j.$CompareHeader), now appending to comparison csv."
             $srcItem | Export-Csv -Path "$Destination\$($timestamp)_compare.csv" -NoTypeInformation -Encoding UTF8 -Force -Append
-            $CompFile = $CompFile | Where-Object{$PSitem.$CompareHeader -ne $j.$CompareHeader}
-            $compCount = $CompFile.count
             break
         } else {
             Write-Verbose "$($i.$SourceHeader) did not match $($j.$CompareHeader)"
