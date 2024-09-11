@@ -1,32 +1,16 @@
 [CmdletBinding()]
 Param(
 
-    [Parameter(Mandatory = $false, HelpMessage = 'Path to Save Log Files')]
-    [string]$LogPath,
     [Parameter(Mandatory = $false, HelpMessage = 'Number of threads to run simultaniously.')]
     [int]$ThreadLimit = (Get-CimInstance -ClassName Win32_ComputerSystem).NumberOfLogicalProcessors * 8
 )
 
 
-
 $timestamp = Get-Date -Format yyyy-MM-dd_HH-mm
-
-if($PSBoundParameters.Keys -contains 'LogPath'){
-    Write-Verbose -Message "Creating log file at $LogPath."
-    #-- Use Start-Transcript to create a .log file
-    #-- If you use "Throw" you'll need to use "Stop-Transcript" before to stop the logging.
-    #-- Major Benefit is that Start-Transcript also captures -Verbose and -Debug messages.
-    $LogPath = Join-Path -Path $LogPath -ChildPath "$($timestamp)_Compare-Csv.log"
-    Start-Transcript -Path "$LogPath" -Append
-}
-$Status = 'In Progress'
-
 
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName PresentationFramework
-
-
 
 
 #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
@@ -38,9 +22,6 @@ $FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @
 $null = $FolderBrowser.ShowDialog()
 if($FolderBrowser.SelectedPath -eq ''){
     Write-Error "No folder path selected. Terminating."
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
-    }
     Exit 2
 } else {
     $Destination = $FolderBrowser.SelectedPath
@@ -56,9 +37,6 @@ $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a Source File to begin
 
 if($msgBoxInput -ne 'OK'){
     Write-Error "OK was not selected. Terminating."
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
-    }
     Exit 2
 } else {
     #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
@@ -71,9 +49,6 @@ if($msgBoxInput -ne 'OK'){
     $null = $FileBrowser.ShowDialog()
     if($FileBrowser.FileName -eq ''){
         Write-Error "File was not selected. Terminating."
-        if($PSBoundParameters.Keys -contains 'LogPath'){
-            Stop-Transcript
-        }
         Exit 2
     } else {
         $SourceFile = "$($FileBrowser.FileName)"
@@ -90,9 +65,6 @@ $msgBoxInput =  [System.Windows.MessageBox]::Show('Choose a file to compare to t
 
 if($msgBoxInput -ne 'OK'){
     Write-Error "OK was not selected. Terminating."
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
-    }
     Exit 2
 } else {
     #-- https://4sysops.com/archives/how-to-create-an-open-file-folder-dialog-box-with-powershell/
@@ -105,9 +77,6 @@ if($msgBoxInput -ne 'OK'){
     $null = $FileBrowser.ShowDialog()
     if($FileBrowser.FileName -eq ''){
         Write-Error "File was not selected. Terminating."
-        if($PSBoundParameters.Keys -contains 'LogPath'){
-            Stop-Transcript
-        }
         Exit 2
     } else {
         $CompareFile = "$($FileBrowser.FileName)"
@@ -127,9 +96,6 @@ try{
 
 } catch {
     Write-Error "Unable to select Source Header: $($PSitem.Exception.Message)"
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
-    }
     Exit 2
 }
 
@@ -142,9 +108,6 @@ try{
     $CompareHeader = $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
 } catch {
     Write-Error "Unable to select Compare Header: $($PSitem.Exception.Message)"
-    if($PSBoundParameters.Keys -contains 'LogPath'){
-        Stop-Transcript
-    }
     Exit 2
 }
 
@@ -152,8 +115,6 @@ try{
 $srcCount = $SrcFile.Count
 Write-Verbose "Total count of items is $srcCount"
 $currentSrcCount = 0
-
-
 
 
 #-- Alias property so that they can be grouped and compared
@@ -242,16 +203,8 @@ Foreach($i in $SrcFile){
 
 }
 
-$Status = 'Completed'
-
-
 # END: Executes Once. Executes Last. Useful for all things after process, like cleaning up after script. Optional.
 Write-Verbose -Message "Script completed successfully. File saved to $Destination\$($timestamp)_compare.csv"
-if($PSBoundParameters.Keys -contains 'LogPath'){
-    Stop-Transcript
-}
-
-Return $Status
 
 
 
