@@ -4,7 +4,7 @@ Param(
     [Parameter(Mandatory = $false, HelpMessage = 'Path to Save Log Files')]
     [string]$LogPath,
     [Parameter(Mandatory = $false, HelpMessage = 'Number of threads to run simultaniously.')]
-    [int]$ThreadLimit = (Get-CimInstance -ClassName Win32_ComputerSystem).NumberOfLogicalProcessors * 4
+    [int]$ThreadLimit = (Get-CimInstance -ClassName Win32_ComputerSystem).NumberOfLogicalProcessors * 8
 )
 
 
