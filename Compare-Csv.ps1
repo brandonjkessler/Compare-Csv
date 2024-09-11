@@ -126,7 +126,7 @@ try{
     $SourceHeader = $SrcFile[0].PSobject.Properties.Name | Out-GridView -Title 'Source Header' -PassThru -ErrorAction Stop
 
 } catch {
-    Write-Error $PSitem.Exception.Message
+    Write-Error "Unable to select Source Header: $($PSitem.Exception.Message)"
     if($PSBoundParameters.Keys -contains 'LogPath'){
         Stop-Transcript
     }
@@ -141,7 +141,7 @@ try{
 
     $CompareHeader = $CompFile[0].PSobject.Properties.Name | Out-GridView -Title 'Compare Header' -PassThru -ErrorAction Stop
 } catch {
-    Write-Error $PSitem.Exception.Message
+    Write-Error "Unable to select Compare Header: $($PSitem.Exception.Message)"
     if($PSBoundParameters.Keys -contains 'LogPath'){
         Stop-Transcript
     }
