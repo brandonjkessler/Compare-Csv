@@ -2,7 +2,7 @@
 Param(
 
     [Parameter(Mandatory = $false, HelpMessage = 'Number of threads to run simultaniously.')]
-    [int]$ThreadLimit = (Get-CimInstance -ClassName Win32_ComputerSystem).NumberOfLogicalProcessors * 8
+    [int]$ThreadLimit = (Get-CimInstance -ClassName Win32_ComputerSystem).NumberOfLogicalProcessors * 16
 )
 
 
